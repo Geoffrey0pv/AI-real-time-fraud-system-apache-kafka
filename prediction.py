@@ -36,10 +36,11 @@ def load_models():
     """
     models = {}
     try:
-        models['logistic'] = joblib.load('/app/model/logistic_regression_model.pkl')
-        models['kneighbors'] = joblib.load('/app/model/knears_neighbors_model.pkl')
-        models['svc'] = joblib.load('/app/model/svc_model.pkl')
-        models['tree'] = joblib.load('/app/model/decision_tree_model.pkl')
+        # Usar rutas relativas para desarrollo local
+        models['logistic'] = joblib.load('model/logistic_regression_model.pkl')
+        models['kneighbors'] = joblib.load('model/knears_neighbors_model.pkl')
+        models['svc'] = joblib.load('model/svc_model.pkl')
+        models['tree'] = joblib.load('model/decision_tree_model.pkl')
         logger.info("Modelos cargados exitosamente.")
     except Exception as e:
         logger.error(f"Error cargando modelos: {str(e)}")
