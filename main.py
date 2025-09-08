@@ -95,7 +95,7 @@ def health():
     Returns:
         dict: Estado de la aplicación.
     """
-    return {"status": "ok"}
+    return {"status": "Geoffrey Pasaje - AOO380495"}
 
 
 @app.get("/transaction/{transaction_id}")
