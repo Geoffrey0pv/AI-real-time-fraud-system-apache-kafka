@@ -25,8 +25,6 @@
 # - Kafka UI: 8080
 # =============================================================================
 
-version: "3.8"
-
 # =============================================================================
 # REDES
 # =============================================================================
@@ -46,6 +44,8 @@ volumes:
   kafka_data:       # Datos de Kafka
     driver: local
   zookeeper_data:   # Datos de Zookeeper
+    driver: local
+  zookeeper_log:    # Logs de Zookeeper (nuevo)
     driver: local
 
 # =============================================================================
@@ -102,15 +102,17 @@ services:
       ZOOKEEPER_MAX_CLIENT_CNXNS: 60
       ZOOKEEPER_SYNC_LIMIT: 2
       ZOOKEEPER_INIT_LIMIT: 5
+      # Habilitar comandos de cuatro letras necesarios para healthcheck
+      ZOOKEEPER_4LW_COMMANDS_WHITELIST: "*"
     ports:
       - "2181:2181"  # Puerto para conexiones externas
     volumes:
       - zookeeper_data:/var/lib/zookeeper/data
-      - zookeeper_data:/var/lib/zookeeper/log
+      - zookeeper_log:/var/lib/zookeeper/log
     networks:
       - fraud-detection
     healthcheck:
-      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      test: ["CMD-SHELL", "echo srvr | nc localhost 2181 | grep -q 'Mode: standalone'"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -191,7 +193,7 @@ services:
     networks:
       - fraud-detection
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "sh", "-c", "nc -z localhost 8080"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -238,7 +240,7 @@ services:
       - fraud-detection
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -262,22 +264,10 @@ services:
         echo 'Creando tópicos de Kafka...'
         
         # Tópico para transacciones entrantes
-        kafka-topics --create --topic transactions_stream \
-          --bootstrap-server kafka:29092 \
-          --partitions 1 \
-          --replication-factor 1 \
-          --if-not-exists \
-          --config retention.ms=604800000 \
-          --config cleanup.policy=delete
+        kafka-topics --create --topic transactions_stream --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists --config retention.ms=604800000 --config cleanup.policy=delete
         
         # Tópico para predicciones de fraude
-        kafka-topics --create --topic fraud_predictions \
-          --bootstrap-server kafka:29092 \
-          --partitions 1 \
-          --replication-factor 1 \
-          --if-not-exists \
-          --config retention.ms=604800000 \
-          --config cleanup.policy=delete
+        kafka-topics --create --topic fraud_predictions --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists --config retention.ms=604800000 --config cleanup.policy=delete
         
         echo 'Tópicos creados exitosamente'
         echo 'Lista de tópicos disponibles:'
